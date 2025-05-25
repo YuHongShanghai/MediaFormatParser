@@ -4,8 +4,8 @@
 
 #include "WavParser.h"
 #include "utils.h"
+#include "logger/easylogging++.h"
 
-#include <iostream>
 #include <fstream>
 
 std::string get_format_str(uint16_t format) {
@@ -106,7 +106,7 @@ int WavParser::parse() {
     }
 
     if (data_size_ < HEAD_CHUNK_SIZE) {
-        std::cerr << "not enough header data" << std::endl;
+        LOG(ERROR) << "not enough header data";
         return -2;
     }
 
@@ -122,11 +122,11 @@ int WavParser::parse() {
         uint32_t chunk_size = bytes_to_int4_le(data_ + pos_ + 4) + 4 + 4;
 
         if (pos_ + chunk_size > valid_data_size) {
-            std::cerr << "not enough chunk data" << std::endl;
+            LOG(ERROR) << "not enough chunk data";
             return -4;
         }
 
-        std::cout << "get chunk id " << chunk_id_str << std::endl;
+        LOG(DEBUG) << "get chunk id " << chunk_id_str;
         if (chunk_id_str == FMT_ID) {
             if (parse_format_chunk() < 0) {
                 return -5;
@@ -152,11 +152,11 @@ int WavParser::parse() {
 }
 
 int WavParser::open_file() {
-    std::cout << __FUNCTION__  << std::endl;
+    LOG(DEBUG) << __FUNCTION__;
 
     std::ifstream file(file_path_, std::ios::binary);
     if (!file) {
-        std::cerr << "open file " << file_path_ << " failed" << std::endl;
+        LOG(ERROR) << "open file " << file_path_ << " failed";
         return -1;
     }
 
@@ -167,23 +167,23 @@ int WavParser::open_file() {
 
     data_ = new(std::nothrow) unsigned char[size];
     if (!data_) {
-        std::cerr << "alloc memory failed" << std::endl;
+        LOG(ERROR) << "alloc memory failed";
         return -2;
     }
     if (file.read(reinterpret_cast<char *>(data_), size)) {
-        std::cout << "read file successfully" << std::endl;
+        LOG(DEBUG) << "read file successfully";
     } else {
-        std::cerr << "read file failed" << std::endl;
+        LOG(ERROR) << "read file failed";
         return -3;
     }
     data_size_ = size;
-    std::cout << "read data size: " << data_size_ << std::endl;
+    LOG(DEBUG) << "read data size: " << data_size_;
     file.close();
     return 0;
 }
 
 int WavParser::parse_header_chunk() {
-    std::cout << __FUNCTION__  << std::endl;
+    LOG(DEBUG) << __FUNCTION__ ;
     
     header_chunk_ = new HeaderChunk();
 
@@ -200,16 +200,16 @@ int WavParser::parse_header_chunk() {
     pos_ += 4;
 
     if (std::string(header_chunk_->type, 4) != WAVE_TAG) {
-        std::cerr << "parse id error. got " << std::string(header_chunk_->type, 4) << ", expected " << WAVE_TAG << std::endl;
+        LOG(ERROR) << "parse id error. got " << std::string(header_chunk_->type, 4) << ", expected " << WAVE_TAG;
         return -2;
     }
 
-    std::cout << *header_chunk_ << std::endl;
+    LOG(INFO) << *header_chunk_;
     return 0;
 }
 
 int WavParser::parse_format_chunk() {
-    std::cout << __FUNCTION__  << std::endl;
+    LOG(DEBUG) << __FUNCTION__ ;
 
     uint32_t pos = pos_;
 
@@ -255,12 +255,12 @@ int WavParser::parse_format_chunk() {
         }
     }
 
-    std::cout << *format_chunk_ << std::endl;
+    LOG(INFO) << *format_chunk_;
     return 0;
 }
 
 int WavParser::parse_fact_chunk() {
-    std::cout << __FUNCTION__  << std::endl;
+    LOG(DEBUG) << __FUNCTION__ ;
 
     uint32_t pos = pos_;
 
@@ -275,12 +275,12 @@ int WavParser::parse_fact_chunk() {
     fact_chunk_->sample_length = bytes_to_int4_le(data_ + pos);
     pos += 4;
 
-    std::cout << *fact_chunk_ << std::endl;
+    LOG(INFO) << *fact_chunk_;
     return 0;
 }
 
 int WavParser::parse_data_chunk() {
-    std::cout << __FUNCTION__  << std::endl;
+    LOG(DEBUG) << __FUNCTION__ ;
 
     uint32_t pos = pos_;
 
@@ -290,7 +290,7 @@ int WavParser::parse_data_chunk() {
     pos += 4;
 
     if (std::string(data_chunk_->id, 4) != DATA_ID) {
-        std::cerr << "parse id error. got " << std::string(data_chunk_->id, 4) << ", expected " << DATA_ID << std::endl;
+        LOG(ERROR) << "parse id error. got " << std::string(data_chunk_->id, 4) << ", expected " << DATA_ID;
         return -1;
     }
 
@@ -299,7 +299,7 @@ int WavParser::parse_data_chunk() {
 
     data_chunk_->data = new(std::nothrow) unsigned char[data_chunk_->size];
     if (data_chunk_->data == nullptr) {
-        std::cerr << "alloc memory failed" << std::endl;
+        LOG(ERROR) << "alloc memory failed";
         return -2;
     }
 
@@ -311,12 +311,13 @@ int WavParser::parse_data_chunk() {
         pos += 1;
     }
 
-    std::cout << *data_chunk_ << std::endl;
+    LOG(INFO) << *data_chunk_;
     return 0;
 }
 
 int WavParser::dump_info() {
-    std::ofstream file(get_output_dir() + get_filename_without_extension(file_path_) + ".txt");
+    std::string file_path = get_output_dir() + get_filename_without_extension(file_path_) + ".txt";
+    std::ofstream file(file_path);
     if (!file.is_open()) {
         return -1;
     }
@@ -334,15 +335,22 @@ int WavParser::dump_info() {
         file << *data_chunk_ << std::endl;
     }
     file.close();
+    LOG(INFO) << "file info has dumped to " << file_path;
+    return 0;
 }
 
 int WavParser::dump_data() {
     if (data_chunk_->data == nullptr) {
-        std::cerr << "no data to dump" << std::endl;
+        LOG(ERROR) << "no data to dump";
         return -1;
     }
     std::string dump_file_name = get_filename_without_extension(file_path_) + ".pcm";
-    return write_data(get_output_dir() + dump_file_name, data_chunk_->data, data_chunk_->size);
+    std::string file_path = get_output_dir() + dump_file_name;
+    int ret = write_data(file_path, data_chunk_->data, data_chunk_->size);
+    if (ret == 0) {
+        LOG(INFO) << "data has dumped to " << file_path;
+    }
+    return ret;
 }
 
 void WavParser::print_ffplay_command() {
@@ -377,8 +385,8 @@ void WavParser::print_ffplay_command() {
         format_str = "mulaw";
     }
 
-    std::cout << "ffplay command:\n";
-    std::cout << "ffplay -autoexit -f " << format_str << " -ar " << format_chunk_->sample_rate << " -ac "
-        << format_chunk_->channels << " " << dump_file_name << std::endl;
+    LOG(INFO) << "ffplay command:";
+    LOG(INFO) << "ffplay -autoexit -f " << format_str << " -ar " << format_chunk_->sample_rate << " -ac "
+        << format_chunk_->channels << " " << dump_file_name;
 
 }
