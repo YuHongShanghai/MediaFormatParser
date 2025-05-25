@@ -1,0 +1,20 @@
+header chunk:
+	id: RIFF
+	size: 5816
+	type: WAVE
+
+format chunk:
+	id: fmt 
+	size: 16
+	audioFormat: 1 (PCM)
+	channels: 1
+	sampleRate: 22050
+	byteRate: 44100
+	blockAlign: 2
+	bitsPerSample: 16
+
+data chunk:
+	id: data
+	size: 3724
+	pad_byte: 0
+

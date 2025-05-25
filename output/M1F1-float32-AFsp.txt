@@ -1,0 +1,26 @@
+header chunk:
+	id: RIFF
+	size: 188160
+	type: WAVE
+
+format chunk:
+	id: fmt 
+	size: 18
+	audioFormat: 3 (IEEE_FLOAT)
+	channels: 2
+	sampleRate: 8000
+	byteRate: 64000
+	blockAlign: 8
+	bitsPerSample: 32
+	extensionSize: 0
+
+fact chunk:
+	id: fact
+	size: 4
+	sampleLength: 23493
+
+data chunk:
+	id: data
+	size: 187944
+	pad_byte: 0
+
