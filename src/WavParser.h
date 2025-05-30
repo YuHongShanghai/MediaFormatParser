@@ -7,9 +7,11 @@
 #ifndef MEDIAFORMATPARSER_WAVPARSER_H
 #define MEDIAFORMATPARSER_WAVPARSER_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <ostream>
+
+#include "Parser.h"
 
 #define HEAD_CHUNK_SIZE 12
 
@@ -51,14 +53,6 @@ struct FactChunk {
     char id[4];
     uint32_t size;
     uint32_t sample_length;
-
-    friend std::ostream & operator << (std::ostream &out, const FactChunk &c) {
-        out << "fact chunk:" << std::endl;
-        out << "\tid: " << std::string(c.id, 4) << std::endl;
-        out << "\tsize: " << c.size << std::endl;
-        out << "\tsampleLength: " << c.sample_length << std::endl;
-        return out;
-    }
 };
 
 struct DataChunk {
@@ -73,31 +67,26 @@ struct AudioData {
     uint32_t length;    // 剩余数据长度
 };
 
-class WavParser {
+class WavParser: public Parser {
 public:
     explicit WavParser(const std::string& filePath);
     ~WavParser();
-    int parse();
     void print_ffplay_command();
 
 private:
-    int open_file();
+    int custom_parse() override;
+    int dump_info() override;
+    int dump_data() override;
     int parse_header_chunk();
     int parse_format_chunk();
     int parse_fact_chunk();
     int parse_data_chunk();
-    int dump_info();
-    int dump_data();
 
 private:
     HeaderChunk *header_chunk_ = nullptr;
     FormatChunk *format_chunk_ = nullptr;
     FactChunk *fact_chunk_ = nullptr;
     DataChunk *data_chunk_ = nullptr;
-    std::string file_path_;
-    unsigned char *data_ = nullptr;
-    size_t data_size_ = 0;
-    size_t pos_ = 0;
 };
 
 

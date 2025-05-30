@@ -1,4 +1,6 @@
 #include "WavParser.h"
+#include "M4aParser.h"
+#include "Mp3Parser.h"
 
 #include <filesystem>
 #include <cassert>
@@ -38,28 +40,31 @@ void init_easyloggingpp() {
 
 void test_wave_parser() {
     std::string normal_file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/wav/normal/";
-    WavParser wav_parser(normal_file_path + "drmapan.wav");
-    assert(wav_parser.parse() == 0);
-    wav_parser.print_ffplay_command();
+    Parser* wav_parser = new WavParser(normal_file_path + "drmapan.wav");
+    assert(wav_parser->parse() == 0);
+    dynamic_cast<WavParser*>(wav_parser)->print_ffplay_command();
+    delete wav_parser;
+}
 
-//    std::string perverse_file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/wav/perverse/";
-//    WavParser wav_parser(perverse_file_path + "Ptjunk.wav");
-//    assert(wav_parser.parse() < 0);
-//    wav_parser.print_ffplay_command();
+void test_m4a_parser() {
+    std::string file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/m4a/";
+    Parser* m4a_parser = new M4aParser(file_path + "1718873863_sample1.m4a");
+    assert(m4a_parser->parse() == 0);
+    delete m4a_parser;
+}
 
-//    for (const auto& entry : std::filesystem::directory_iterator(normal_file_path)) {
-//        if (entry.is_regular_file()) {
-//            std::cout << "================= TEST " << entry.path().string() << " =================" << std::endl;
-//            WavParser wav_parser(entry.path());
-//            assert(wav_parser.parse() == 0);
-//            std::cout << "================= " << entry.path().string() << " PASS =================" << std::endl;
-//        }
-//    }
+void test_mp3_parser() {
+    std::string file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/mp3/";
+    Parser* mp3_parser = new Mp3Parser(file_path + "jay.mp3");
+    assert(mp3_parser->parse() == 0);
+    delete mp3_parser;
 }
 
 int main() {
     init_easyloggingpp();
-    test_wave_parser();
+    // test_wave_parser();
+    // test_m4a_parser();
+    test_mp3_parser();
     return 0;
 }
 

@@ -71,15 +71,19 @@ std::ostream & operator << (std::ostream &out, const DataChunk &c) {
     return out;
 }
 
-WavParser::WavParser(const std::string& filePath): file_path_(filePath) {
+std::ostream & operator << (std::ostream &out, const FactChunk &c) {
+    out << "fact chunk:" << std::endl;
+    out << "\tid: " << std::string(c.id, 4) << std::endl;
+    out << "\tsize: " << c.size << std::endl;
+    out << "\tsampleLength: " << c.sample_length << std::endl;
+    return out;
+}
+
+WavParser::WavParser(const std::string& filePath): Parser(filePath) {
     
 }
 
 WavParser::~WavParser() {
-    if (data_) {
-        delete[] data_;
-    }
-
     if (header_chunk_) {
         delete header_chunk_;
     }
@@ -100,18 +104,14 @@ WavParser::~WavParser() {
     }
 }
 
-int WavParser::parse() {
-    if (open_file() < 0) {
+int WavParser::custom_parse() {
+    if (data_size_ < HEAD_CHUNK_SIZE) {
+        LOG(ERROR) << "not enough header data";
         return -1;
     }
 
-    if (data_size_ < HEAD_CHUNK_SIZE) {
-        LOG(ERROR) << "not enough header data";
-        return -2;
-    }
-
     if (parse_header_chunk() < 0) {
-        return -3;
+        return -2;
     }
 
     uint32_t valid_data_size = header_chunk_->size + 8;
@@ -123,21 +123,21 @@ int WavParser::parse() {
 
         if (pos_ + chunk_size > valid_data_size) {
             LOG(ERROR) << "not enough chunk data";
-            return -4;
+            return -3;
         }
 
         LOG(DEBUG) << "get chunk id " << chunk_id_str;
         if (chunk_id_str == FMT_ID) {
             if (parse_format_chunk() < 0) {
-                return -5;
+                return -4;
             }
         } else if (chunk_id_str == FACT_ID) {
             if (parse_fact_chunk() < 0) {
-                return -6;
+                return -5;
             }
         } else if (chunk_id_str == DATA_ID) {
             if (parse_data_chunk() < 0) {
-                return -7;
+                return -6;
             } else {
                 break;
             }
@@ -145,40 +145,6 @@ int WavParser::parse() {
         pos_ += chunk_size;
     }
 
-    dump_info();
-    dump_data();
-
-    return 0;
-}
-
-int WavParser::open_file() {
-    LOG(DEBUG) << __FUNCTION__;
-
-    std::ifstream file(file_path_, std::ios::binary);
-    if (!file) {
-        LOG(ERROR) << "open file " << file_path_ << " failed";
-        return -1;
-    }
-
-    // TODO: 大文件读取优化
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    data_ = new(std::nothrow) unsigned char[size];
-    if (!data_) {
-        LOG(ERROR) << "alloc memory failed";
-        return -2;
-    }
-    if (file.read(reinterpret_cast<char *>(data_), size)) {
-        LOG(DEBUG) << "read file successfully";
-    } else {
-        LOG(ERROR) << "read file failed";
-        return -3;
-    }
-    data_size_ = size;
-    LOG(DEBUG) << "read data size: " << data_size_;
-    file.close();
     return 0;
 }
 
