@@ -282,7 +282,7 @@ int WavParser::parse_data_chunk() {
 }
 
 int WavParser::dump_info() {
-    std::string file_path = get_output_dir() + get_filename_without_extension(file_path_) + ".txt";
+    std::string file_path = get_output_path() + ".txt";
     std::ofstream file(file_path);
     if (!file.is_open()) {
         return -1;

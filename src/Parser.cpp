@@ -6,6 +6,7 @@
 
 #include <utility>
 #include "logger/easylogging++.h"
+#include "utils.h"
 
 Parser::Parser(const std::string& filePath): file_path_(std::move(filePath)) {
 
@@ -60,4 +61,8 @@ int Parser::open_file() {
     LOG(DEBUG) << "read data size: " << data_size_;
     file.close();
     return 0;
+}
+
+std::string Parser::get_output_path() {
+    return get_output_dir() + get_filename_without_extension(file_path_);
 }

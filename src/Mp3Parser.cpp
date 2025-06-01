@@ -6,7 +6,6 @@
 #include "logger/easylogging++.h"
 #include "utils.h"
 #include <string>
-#include <codecvt>
 
 std::ostream& operator << (std::ostream &out, const FrameHeaderUnion &c) {
     out << "frame header:" << std::endl;
@@ -200,7 +199,7 @@ int Mp3Parser::custom_parse() {
 }
 
 int Mp3Parser::dump_info() {
-    std::string file_path = get_output_dir() + get_filename_without_extension(file_path_) + ".txt";
+    std::string file_path = get_output_path() + ".txt";
     std::ofstream file(file_path);
     if (!file.is_open()) {
         return -1;

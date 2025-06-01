@@ -1,6 +1,7 @@
 #include "WavParser.h"
 #include "M4aParser.h"
 #include "Mp3Parser.h"
+#include "FlvParser.h"
 
 #include <filesystem>
 #include <cassert>
@@ -40,31 +41,35 @@ void init_easyloggingpp() {
 
 void test_wave_parser() {
     std::string normal_file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/wav/normal/";
-    Parser* wav_parser = new WavParser(normal_file_path + "drmapan.wav");
-    assert(wav_parser->parse() == 0);
-    dynamic_cast<WavParser*>(wav_parser)->print_ffplay_command();
-    delete wav_parser;
+    WavParser wav_parser(normal_file_path + "drmapan.wav");
+    assert(wav_parser.parse() == 0);
+    wav_parser.print_ffplay_command();
 }
 
 void test_m4a_parser() {
     std::string file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/m4a/";
-    Parser* m4a_parser = new M4aParser(file_path + "1718873863_sample1.m4a");
-    assert(m4a_parser->parse() == 0);
-    delete m4a_parser;
+    M4aParser m4a_parser(file_path + "1718873863_sample1.m4a");
+    assert(m4a_parser.parse() == 0);
 }
 
 void test_mp3_parser() {
     std::string file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/mp3/";
-    Parser* mp3_parser = new Mp3Parser(file_path + "jay.mp3");
-    assert(mp3_parser->parse() == 0);
-    delete mp3_parser;
+    Mp3Parser mp3_parser(file_path + "jay.mp3");
+    assert(mp3_parser.parse() == 0);
+}
+
+void test_flv_parser() {
+    std::string file_path = "/Users/yuhong/Desktop/MediaFormatParser/test_files/flv/";
+    FlvParser flv_parser(file_path + "video.flv");
+    assert(flv_parser.parse() == 0);
 }
 
 int main() {
     init_easyloggingpp();
     // test_wave_parser();
     // test_m4a_parser();
-    test_mp3_parser();
+    // test_mp3_parser();
+    test_flv_parser();
     return 0;
 }
 

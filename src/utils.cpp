@@ -15,6 +15,14 @@ uint64_t bytes_to_int8_be(const unsigned char* data) {
             (static_cast<uint64_t>(static_cast<uint8_t>(data[7])));
 }
 
+double bytes_to_double_be(const unsigned char* data) {
+    uint64_t temp = bytes_to_int8_be(data);
+    double result;
+    std::memcpy(&result, &temp, sizeof(result));
+    return result;
+}
+
+
 uint32_t bytes_to_int4_be(const unsigned char* data) {
     return (static_cast<uint8_t>(data[0]) << 24) |
            (static_cast<uint8_t>(data[1]) << 16) |
@@ -73,5 +81,11 @@ int write_data(std::string file_path, unsigned char *data, size_t size) {
 
 std::string get_output_dir() {
     return "../output/";
+}
+
+void write_u64(uint64_t & x, int length, int value)
+{
+    uint64_t mask = 0xFFFFFFFFFFFFFFFF >> (64 - length);
+    x = (x << length) | ((uint64_t)value & mask);
 }
 

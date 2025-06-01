@@ -18,6 +18,7 @@ protected:
     virtual int dump_info() = 0;
     virtual int dump_data() = 0;
     int open_file();
+    std::string get_output_path();
 
 protected:
     std::string file_path_;
