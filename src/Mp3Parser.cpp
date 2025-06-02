@@ -14,8 +14,8 @@ std::ostream& operator << (std::ostream &out, const FrameHeaderUnion &c) {
     out << "\tversion: " << std::bitset<2>(c.bits.version) << std::endl;
     out << "\tlayer: " << std::bitset<2>(c.bits.layer) << std::endl;
     out << "\tcrc: " << std::bitset<1>(c.bits.error_protection) << std::endl;
-    out << "\tbitRateIndex: " << std::bitset<4>(c.bits.bit_rate_index) << std::endl;
-    out << "\tsampleRateIndex: " << std::bitset<2>(c.bits.sample_rate_index) << std::endl;
+    out << "\tbitRateIndex: " << std::bitset<4>(c.bits.bit_rate_index) << " (" << get_bit_rate(c) << ")" << std::endl;
+    out << "\tsampleRateIndex: " << std::bitset<2>(c.bits.sample_rate_index) << " (" << get_sample_rate(c) << ")" << std::endl;
     out << "\tpadding: " << std::bitset<1>(c.bits.padding) << std::endl;
     out << "\textension: " << std::bitset<1>(c.bits.extension) << std::endl;
     out << "\tchannelMode: " << std::bitset<2>(c.bits.channel_mode) << std::endl;
@@ -155,10 +155,31 @@ void Mp3Parser::parse_frame_headers() {
             // LOG(DEBUG) << "got a frame header at " << pos_;
             FrameHeaderUnion frame_header{};
             memcpy(&frame_header.raw, data_ + pos_, 4);
-            // LOG(INFO) << frame_header;
+            LOG(INFO) << frame_header;
+
+            if (version_ == -1) {
+                version_ = frame_header.bits.version;
+            } else {
+                if (frame_header.bits.version != version_) {
+                    pos_ += 4;
+                    continue;
+                }
+            }
+
+            if (layer_ == -1) {
+                layer_ = frame_header.bits.layer;
+            } else {
+                if (frame_header.bits.layer != layer_) {
+                    pos_ += 4;
+                    continue;
+                }
+            }
+
             frame_headers.push_back(frame_header);
             last_frame_pos_ = pos_;
-            pos_ += 4;
+            uint32_t data_size = get_frame_data_size(frame_header);
+            LOG(INFO) << "data size: " << data_size;
+            pos_ += 4 + data_size;
         } else {
             pos_++;
         }
@@ -264,4 +285,237 @@ int Mp3Parser::dump_data() {
     mpg123_exit();
 
     return 0;
+}
+
+int get_sample_rate(const FrameHeaderUnion& frame_header) {
+    int sample_rate = 1;
+
+    // MPEG 2.5
+    if (frame_header.bits.version == 0) {
+        if (frame_header.bits.sample_rate_index == 0) {
+            sample_rate = 11025;
+        } else if (frame_header.bits.sample_rate_index == 1) {
+            sample_rate = 12000;
+        } else if (frame_header.bits.sample_rate_index == 2) {
+            sample_rate = 8000;
+        }
+    }
+    // MPEG 2
+    else if (frame_header.bits.version == 2) {
+        if (frame_header.bits.sample_rate_index == 0) {
+            sample_rate = 22050;
+        } else if (frame_header.bits.sample_rate_index == 1) {
+            sample_rate = 24000;
+        } else if (frame_header.bits.sample_rate_index == 2) {
+            sample_rate = 16000;
+        }
+    }
+        // MPEG 1
+    else if (frame_header.bits.version == 3) {
+        if (frame_header.bits.sample_rate_index == 0) {
+            sample_rate = 44100;
+        } else if (frame_header.bits.sample_rate_index == 1) {
+            sample_rate = 48000;
+        } else if (frame_header.bits.sample_rate_index == 2) {
+            sample_rate = 32000;
+        }
+    }
+
+    return sample_rate;
+}
+
+int get_bit_rate(const FrameHeaderUnion& frame_header) {
+    int bitrate = 0;
+    // MPEG 1
+    if (frame_header.bits.version == 3) {
+        // Layer I
+        if (frame_header.bits.layer == 3) {
+            if (frame_header.bits.bit_rate_index >= 1 && frame_header.bits.bit_rate_index <= 14) {
+                bitrate = frame_header.bits.bit_rate_index*32;
+            }
+        }
+        // Layer II
+        else if (frame_header.bits.layer == 2) {
+            if (frame_header.bits.bit_rate_index == 1) {
+                bitrate = 32;
+            } else if (frame_header.bits.bit_rate_index == 2) {
+                bitrate = 48;
+            } else if (frame_header.bits.bit_rate_index == 3) {
+                bitrate = 56;
+            } else if (frame_header.bits.bit_rate_index == 4) {
+                bitrate = 64;
+            } else if (frame_header.bits.bit_rate_index == 5) {
+                bitrate = 80;
+            } else if (frame_header.bits.bit_rate_index == 6) {
+                bitrate = 96;
+            } else if (frame_header.bits.bit_rate_index == 7) {
+                bitrate = 112;
+            } else if (frame_header.bits.bit_rate_index == 8) {
+                bitrate = 128;
+            } else if (frame_header.bits.bit_rate_index == 9) {
+                bitrate = 160;
+            } else if (frame_header.bits.bit_rate_index == 10) {
+                bitrate = 192;
+            } else if (frame_header.bits.bit_rate_index == 11) {
+                bitrate = 224;
+            } else if (frame_header.bits.bit_rate_index == 12) {
+                bitrate = 256;
+            } else if (frame_header.bits.bit_rate_index == 13) {
+                bitrate = 320;
+            } else if (frame_header.bits.bit_rate_index == 14) {
+                bitrate = 384;
+            }
+        }
+        // Layer III
+        else if (frame_header.bits.layer == 1) {
+            if (frame_header.bits.bit_rate_index == 1) {
+                bitrate = 32;
+            } else if (frame_header.bits.bit_rate_index == 2) {
+                bitrate = 40;
+            } else if (frame_header.bits.bit_rate_index == 3) {
+                bitrate = 48;
+            } else if (frame_header.bits.bit_rate_index == 4) {
+                bitrate = 56;
+            } else if (frame_header.bits.bit_rate_index == 5) {
+                bitrate = 64;
+            } else if (frame_header.bits.bit_rate_index == 6) {
+                bitrate = 80;
+            } else if (frame_header.bits.bit_rate_index == 7) {
+                bitrate = 96;
+            } else if (frame_header.bits.bit_rate_index == 8) {
+                bitrate = 112;
+            } else if (frame_header.bits.bit_rate_index == 9) {
+                bitrate = 128;
+            } else if (frame_header.bits.bit_rate_index == 10) {
+                bitrate = 160;
+            } else if (frame_header.bits.bit_rate_index == 11) {
+                bitrate = 192;
+            } else if (frame_header.bits.bit_rate_index == 12) {
+                bitrate = 224;
+            } else if (frame_header.bits.bit_rate_index == 13) {
+                bitrate = 256;
+            } else if (frame_header.bits.bit_rate_index == 14) {
+                bitrate = 320;
+            }
+        }
+    }
+    // MPEG 2, MPEG 2.5
+    else if (frame_header.bits.version == 0 || frame_header.bits.version == 2) {
+        // Layer I
+        if (frame_header.bits.layer == 3) {
+            if (frame_header.bits.bit_rate_index == 1) {
+                bitrate = 32;
+            } else if (frame_header.bits.bit_rate_index == 2) {
+                bitrate = 48;
+            } else if (frame_header.bits.bit_rate_index == 3) {
+                bitrate = 56;
+            } else if (frame_header.bits.bit_rate_index == 4) {
+                bitrate = 64;
+            } else if (frame_header.bits.bit_rate_index == 5) {
+                bitrate = 80;
+            } else if (frame_header.bits.bit_rate_index == 6) {
+                bitrate = 96;
+            } else if (frame_header.bits.bit_rate_index == 7) {
+                bitrate = 112;
+            } else if (frame_header.bits.bit_rate_index == 8) {
+                bitrate = 128;
+            } else if (frame_header.bits.bit_rate_index == 9) {
+                bitrate = 144;
+            } else if (frame_header.bits.bit_rate_index == 10) {
+                bitrate = 160;
+            } else if (frame_header.bits.bit_rate_index == 11) {
+                bitrate = 176;
+            } else if (frame_header.bits.bit_rate_index == 12) {
+                bitrate = 192;
+            } else if (frame_header.bits.bit_rate_index == 13) {
+                bitrate = 224;
+            } else if (frame_header.bits.bit_rate_index == 14) {
+                bitrate = 256;
+            }
+        }
+        // Layer II, Layer III
+        else if (frame_header.bits.layer == 2 || frame_header.bits.layer == 1) {
+            if (frame_header.bits.bit_rate_index == 1) {
+                bitrate = 8;
+            } else if (frame_header.bits.bit_rate_index == 2) {
+                bitrate = 16;
+            } else if (frame_header.bits.bit_rate_index == 3) {
+                bitrate = 24;
+            } else if (frame_header.bits.bit_rate_index == 4) {
+                bitrate = 32;
+            } else if (frame_header.bits.bit_rate_index == 5) {
+                bitrate = 40;
+            } else if (frame_header.bits.bit_rate_index == 6) {
+                bitrate = 48;
+            } else if (frame_header.bits.bit_rate_index == 7) {
+                bitrate = 56;
+            } else if (frame_header.bits.bit_rate_index == 8) {
+                bitrate = 64;
+            } else if (frame_header.bits.bit_rate_index == 9) {
+                bitrate = 80;
+            } else if (frame_header.bits.bit_rate_index == 10) {
+                bitrate = 96;
+            } else if (frame_header.bits.bit_rate_index == 11) {
+                bitrate = 112;
+            } else if (frame_header.bits.bit_rate_index == 12) {
+                bitrate = 128;
+            } else if (frame_header.bits.bit_rate_index == 13) {
+                bitrate = 144;
+            } else if (frame_header.bits.bit_rate_index == 14) {
+                bitrate = 160;
+            }
+        }
+    }
+    return bitrate;
+}
+
+int get_sample_count_per_frame(const FrameHeaderUnion& frame_header) {
+    int count = 0;
+    // MPEG 2.5
+    if (frame_header.bits.version == 0) {
+        if (frame_header.bits.layer == 3) {
+            count = 384;
+        } else if (frame_header.bits.layer == 2) {
+            count = 1152;
+        } else if (frame_header.bits.layer == 1) {
+            count = 576;
+        }
+    }
+        // MPEG 2
+    else if (frame_header.bits.version == 2) {
+        if (frame_header.bits.layer == 3) {
+            count = 384;
+        } else if (frame_header.bits.layer == 2) {
+            count = 1152;
+        } else if (frame_header.bits.layer == 1) {
+            count = 576;
+        }
+    }
+    // MPEG 1
+    else if (frame_header.bits.version == 3) {
+        if (frame_header.bits.layer == 3) {
+            count = 384;
+        } else if (frame_header.bits.layer == 2) {
+            count = 1152;
+        } else if (frame_header.bits.layer == 1) {
+            count = 1152;
+        }
+    }
+
+    return count;
+}
+
+int get_frame_data_size(const FrameHeaderUnion& frame_header) {
+    int data_size = 0;
+    int sample_count = get_sample_count_per_frame(frame_header);
+    int bitrate = get_bit_rate(frame_header) * 1000;
+    int sample_rate = get_sample_rate(frame_header);
+    int padding = frame_header.bits.padding;
+    if (frame_header.bits.layer == 3) {
+        data_size = sample_count * bitrate / 8 / sample_rate + padding*4;
+    }
+    if (frame_header.bits.layer == 1 || frame_header.bits.layer == 2) {
+        data_size =  sample_count * bitrate / 8 / sample_rate + padding;
+    }
+    return data_size;
 }

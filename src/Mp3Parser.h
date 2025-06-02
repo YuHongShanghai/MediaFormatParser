@@ -67,6 +67,11 @@ struct Id3v2FrameHeader {
     uint16_t flags;
 };
 
+int get_sample_rate(const FrameHeaderUnion& frame_header);
+int get_bit_rate(const FrameHeaderUnion& frame_header);
+int get_sample_count_per_frame(const FrameHeaderUnion& frame_header);
+int get_frame_data_size(const FrameHeaderUnion& frame_header);
+
 class Mp3Parser: public Parser {
 public:
     Mp3Parser(const std::string& file_path);
@@ -89,6 +94,8 @@ private:
     Id3v2ExtendedHeader id3v2_extended_header;
     bool has_extended_header_;
     std::vector<Id3v2FrameHeader> id3v2_frame_headers;
+    int version_ = -1;
+    int layer_ = -1;
 };
 
 
