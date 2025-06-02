@@ -6,6 +6,7 @@
 #include "logger/easylogging++.h"
 #include "utils.h"
 #include <string>
+#include <mpg123.h>
 
 std::ostream& operator << (std::ostream &out, const FrameHeaderUnion &c) {
     out << "frame header:" << std::endl;
@@ -233,5 +234,34 @@ int Mp3Parser::dump_info() {
 }
 
 int Mp3Parser::dump_data() {
+    std::string output_file_path = get_output_path() + ".pcm";
+
+    mpg123_init();
+    mpg123_handle *mh = mpg123_new(NULL, NULL);
+    mpg123_open(mh, file_path_.c_str());
+
+    long rate;
+    int channels, encoding;
+    if (mpg123_getformat(mh, &rate, &channels, &encoding) != MPG123_OK) {
+        LOG(ERROR) << "Failed to get audio format!" << std::endl;
+        return -1;
+    }
+
+    LOG(INFO) << "Sample rate: " << rate << ", Channels: " << channels << ", encoding: " << encoding << std::endl;
+
+    const size_t buffer_size = 8192;
+    unsigned char buffer[buffer_size];
+    size_t done;
+
+    std::ofstream out(output_file_path.c_str(), std::ios::binary);
+    while (mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK) {
+        out.write(reinterpret_cast<char *>(buffer), done);
+    }
+
+    out.close();
+    mpg123_close(mh);
+    mpg123_delete(mh);
+    mpg123_exit();
+
     return 0;
 }
