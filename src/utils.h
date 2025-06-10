@@ -10,12 +10,21 @@
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
+#include <arm_neon.h>
 
 bool get_bit(char c, int n);
 
 uint64_t bytes_to_int8_be(const unsigned char* data);
 
 double bytes_to_double_be(const unsigned char* data);
+
+float bytes_to_fixed2_be(const uint8_t* data);
+
+float bytes_to_fixed4_be(const uint8_t* data);
+
+float32_t bytes_to_float4_be(const unsigned char* data);
+
+float16_t bytes_to_float2_be(const unsigned char* data);
 
 uint32_t bytes_to_int4_be(const unsigned char* data);
 

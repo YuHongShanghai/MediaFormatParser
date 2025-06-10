@@ -22,6 +22,30 @@ double bytes_to_double_be(const unsigned char* data) {
     return result;
 }
 
+float bytes_to_fixed4_be(const uint8_t* data) {
+    int16_t int_part = (data[0] << 8) | data[1];
+    uint16_t frac_part = (data[2] << 8) | data[3];
+    return static_cast<float>(int_part) + static_cast<float>(frac_part) / 65536.0;
+}
+
+float bytes_to_fixed2_be(const uint8_t* data) {
+    int16_t raw = (data[0] << 8) | data[1];
+    return static_cast<float>(raw) / 256.0f;
+}
+
+float32_t bytes_to_float4_be(const unsigned char* data) {
+    auto temp = bytes_to_int4_be(data);
+    float32_t result;
+    std::memcpy(&result, &temp, sizeof(result));
+    return result;
+}
+
+float16_t bytes_to_float2_be(const unsigned char* data) {
+    auto temp = bytes_to_int2_be(data);
+    float16_t result;
+    std::memcpy(&result, &temp, sizeof(result));
+    return result;
+}
 
 uint32_t bytes_to_int4_be(const unsigned char* data) {
     return (static_cast<uint8_t>(data[0]) << 24) |

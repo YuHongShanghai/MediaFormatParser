@@ -67,8 +67,8 @@ void test_flv_parser() {
 int main() {
     init_easyloggingpp();
     // test_wave_parser();
-    // test_m4a_parser();
-    test_mp3_parser();
+     test_m4a_parser();
+//    test_mp3_parser();
 //    test_flv_parser();
     return 0;
 }
